@@ -1,0 +1,115 @@
+﻿@using ToDoList.Domain.DTO
+@model IEnumerable<TaskModel>
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/_Layout.cshtml";
+}
+
+@foreach (var task in Model)
+{
+    var totalTimeSecond = (task.ExpirationDate - task.StartingDate).TotalSeconds;
+    var elapsedTime = (DateTime.Now - task.StartingDate).TotalSeconds;
+    var hasExpired = false;
+    if (task.ComplationDate.HasValue)
+    {
+        hasExpired = true;
+        elapsedTime = (task.ComplationDate.Value - task.StartingDate).TotalSeconds;
+    }
+    if (DateTime.Now > task.ExpirationDate)
+    {
+        hasExpired = true;
+    }
+    var proggresValue = Convert.ToInt32((100 / totalTimeSecond) * elapsedTime);
+    var className = "";
+    if (proggresValue > 100)
+    {
+        className = "bg-danger";
+        proggresValue = 100;
+    }
+
+
+    <div class="card task" data-startingDate="@task.StartingDate.ToString("yyyy-MM-dd HH:mm:ss")" data-hasExpired="@hasExpired" data-expirationDate="@task.ExpirationDate.ToString("yyyy-MM-dd HH:mm:ss")" style="margin-top:10px">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-10">
+
+                    @if (task.ComplationDate.HasValue)
+                    {
+                        className = "bg-success";
+                        <div class="col-md-12 text-success">
+                            <label>Tamamlanma Tarihi</label>
+                            <small>@task.ComplationDate.Value</small>
+                        </div>
+
+                        if (task.ExpirationDate < task.ComplationDate.Value)
+                        {
+                            var elapsedMinute = Convert.ToInt32((task.ComplationDate.Value - task.ExpirationDate).TotalMinutes);
+
+                            <div class="col-md-12 text-danger">
+                                <label>Gecikme Süresi</label>
+                                <small>@elapsedMinute dk.</small>
+                            </div>
+                        }
+                    }
+                    <p>
+                        @task.Detail
+                    </p>
+                </div>
+                <div class="col-md-2">
+
+                    <div class="float-right">
+                        <small>@task.CreationDate</small>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-9">
+                    @{
+                        var isHiddenProggressStyle = "";
+                        if (DateTime.Now < task.StartingDate)
+                        {
+                            isHiddenProggressStyle = "display:none;";
+                        }
+                    }
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="progress" style="@isHiddenProggressStyle">
+                                <div class="progress-bar progress-bar-striped @className" style="width:@(proggresValue.ToString())%;" role="progressbar" aria-valuenow="@proggresValue" aria-valuemin="0" aria-valuemax="100">@proggresValue.ToString()%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="float-left">
+                                <label>Başlangıç Tarihi</label>
+                                <small>
+                                    @task.StartingDate
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="float-right">
+                                <label>Bitiş Tarihi</label>
+                                <small>
+                                    @task.ExpirationDate
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="float-right">
+
+                        @if (!task.ComplationDate.HasValue)
+                        {
+                            <button type="button" data-id="@task.TaskId" class="btn btn-success btn-sm complateTask">Tamamlandı</button>
+                        }
+                        <button type="button" data-id="@task.TaskId" class="btn btn-danger btn-sm removeTask">Kaldır</button>
+                        <button type="button" data-id="@task.TaskId" class="btn btn-info btn-sm updateTask">Güncelle</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

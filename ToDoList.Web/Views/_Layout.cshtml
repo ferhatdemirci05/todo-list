@@ -1,0 +1,275 @@
+﻿<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>ToDoList</title>
+    <link href="~/Content/bootstrap.min.css" rel="stylesheet" />
+    <link href="~/Content/bootstrap-datetimepicker.min.css" rel="stylesheet" />
+    <link href="~/Content/Alert/Alert.css" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #f9f9f9;
+        }
+
+        #alertBox {
+            position: absolute;
+            z-index: 1400;
+            top: 2%;
+            right: 4%;
+            margin: 0px auto;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card" style="margin-top:10px;">
+            <div class="card-body">
+                <a href="/" class="btn btn-outline-primary">Tüm Görevler</a>
+                <a href="/Missing" class="btn btn-outline-secondary">Başlamamış Görevler</a>
+                <a href="/Completed" class="btn btn-outline-success">Tamamlanan Görevler</a>
+                <a href="/Outdated" class="btn btn-outline-danger">Zamanı Geçen Görevler</a>
+                <div class="float-right">
+                    <button type="button" class="btn btn-dark btnNewTask" data-toggle="modal" data-target="#taskModal">
+                        Yeni Görev Oluştur
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @RenderBody()
+
+        <!-- Modal -->
+        <div class="modal fade" id="taskModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Görev Bilgileri</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form method="post" action="/Home/Index">
+                        <div class="modal-body">
+                            <div class="form-group" id="detail">
+                                <label for="exampleInputEmail1">Görev Bilgileri</label>
+                                <input type="text" name="Detail" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <label for="exampleInputPassword1">Başlama Zamanı</label>
+                                        <div class='input-group date' id='startingDate'>
+                                            <input type='text' name="StartingDate" class="form-control" />
+                                            <span class="input-group-addon">
+                                                <span class="glyphicon glyphicon-calendar"></span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label for="exampleInputPassword1">Başlama Zamanı</label>
+                                        <div class='input-group date' id='expirationDate'>
+                                            <input type='text' name="ExpirationDate" class="form-control" />
+                                            <span class="input-group-addon">
+                                                <span class="glyphicon glyphicon-calendar"></span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" data-dismiss="modal">İptal</button>
+                            <button type="submit" class="btn btn-success btnSave">Kaydet</button>
+
+                            <button type="button" class="btn btn-success btnUpdate" style="display:none">Güncelle</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/Scripts/jquery-3.0.0.min.js"></script>
+    <script src="~/Scripts/umd/popper.min.js"></script>
+    <script src="~/Scripts/bootstrap.min.js"></script>
+    <script src="~/Scripts/bootstrap-datetimepicker.min.js"></script>
+    <script src="~/Scripts/Alert/alert.js"></script>
+    <script src="~/Scripts/Alert/alertText.js"></script>
+    <script src="~/Scripts/moment.min.js"></script>
+    <script type="text/javascript">
+
+        var Alert = {
+            success: function (message) {
+                var template = '<div id="alertBox" class="alert alert-success" data-alert="alert">' + message + '</div>';
+                $("body").append(template);
+                $("#alertBox").fadeIn();
+                Alert.close();
+            },
+            error: function (message) {
+                var template = '<div id="alertBox" class="alert alert-danger" data-alert="alert">' + message + '</div>';
+                $("body").append(template);
+                $("#alertBox").fadeIn();
+                Alert.close();
+            },
+            close: function () {
+                window.setTimeout(function () {
+                    $("#alertBox").fadeOut(300)
+                }, 3000);
+                $("body").remove("#alertBox");
+            }
+        }
+
+        $(function () {
+            $('#startingDate,#expirationDate').datetimepicker({
+                locale: 'tr'
+            });
+        });
+
+        $(document).ready(function () {
+            $(".removeTask").on("click", function () {
+                var $trigger = $(this);
+                var id = $trigger.data("id");
+                $.ajax({
+                    type: "POST",
+                    url: "/Home/removeTask/?taskId=" + id,
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (result) {
+                        if (result) {
+                            toastr.success("Kaldırma işlemi başarılı");
+                            var $card = $trigger.closest(".card");
+                            $card.remove();
+                        }
+                    }
+                })
+            })
+
+            $(".complateTask").on("click", function () {
+                var $trigger = $(this);
+                var id = $trigger.data("id");
+                $.ajax({
+                    type: "POST",
+                    url: "/Home/ComplateTask/?taskId=" + id,
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (result) {
+                        if (result) {
+                            location.reload();
+                        }
+                    }
+                })
+            })
+            var taskId = 0;
+            $(".updateTask").on("click", function () {
+                var $trigger = $(this);
+                taskId = $trigger.data("id");
+                $.ajax({
+                    type: "GET",
+                    url: "/Home/getTask/?taskId=" + taskId,
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (result) {
+                        $("#detail input").val(result.Detail);
+                        $("#startingDate input").val(moment(result.StartingDate).format("YYYY-MM-DD HH:mm"));
+                        $("#expirationDate input").val(moment(result.ExpirationDate).format("YYYY-MM-DD HH:mm"));
+                        $("#taskModal").modal("show")
+                        $(".btnUpdate").show();
+                        $(".btnSave").hide();
+                    }
+                })
+            })
+            $(".btnUpdate").on("click", function () {
+                if (taskId != 0) {
+                    var data = {
+                        TaskId: taskId,
+                        Detail: $("#detail input").val(),
+                        StartingDate: $("#startingDate input").val(),
+                        ExpirationDate: $("#expirationDate input").val()
+                    }
+
+                    $.ajax({
+                        type: "POST",
+                        url: "/Home/updateTask",
+                        data: JSON.stringify(data),
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: function (result) {
+                            if (result) {
+                                location.reload()
+                            }
+                        }
+                    })
+                }
+            })
+            $(".btnNewTask").on("click", function () {
+                taskId = 0;
+                $("#detail input").val("");
+                $("#startingDate input").val("");
+                $("#expirationDate input").val("");
+                $("#taskModal").modal("show")
+                $(".btnUpdate").hide();
+                $(".btnSave").show();
+            })
+
+
+            var tasks = $(".task");
+            $.each(tasks, function (index, task) {
+                var startingDate = new Date($(task).attr("data-startingDate")).getTime() / 1000;
+                var expirationDate = new Date($(task).attr("data-expirationDate")).getTime() / 1000;
+                var hasExpired = $(task).attr("data-hasExpired") == "True";
+                let intervalId = window.setInterval(function () {
+                    var today = new Date();
+                    var nowDate = parseInt((today.getTime() / 1000).toFixed(0));
+
+                    var totalTimeSecond = expirationDate - startingDate;
+                    var elapsedTimeSecond = nowDate - startingDate;
+                    var proggresValue = parseInt((100 / totalTimeSecond) * elapsedTimeSecond);
+                    var className = "";
+                    if (proggresValue >= 100) {
+                        className = "bg-danger";
+                        proggresValue = 100;
+                    }
+                    if (nowDate > startingDate) {
+                        $(task).find(".progress").show();
+                    }
+                    if (hasExpired) {
+                        window.clearInterval(intervalId);
+                    }
+                    else {
+                        var progressBar = $(task).find(".progress-bar")
+                            .css("width", proggresValue + "%").attr("aria-valuenow", proggresValue).text(proggresValue + "%");
+                        if (!$(progressBar).hasClass("bg-success")) {
+                            $(progressBar).addClass(className);
+                        }
+                    }
+                    if (nowDate > expirationDate && !hasExpired) {
+                        hasExpired = true;
+                        toastr.error("Bir görevin zamanı bitmiştir")
+                        console.log("Girdi")
+                    }
+
+
+
+                }, 1000);
+            });
+        })
+    </script>
+    @if (TempData["complateTask"] != null && (bool)TempData["complateTask"])
+    {
+        <script>
+            toastr.success("Görev tamamlandı");
+        </script>
+    }
+    @if (TempData["updateTask"] != null && (bool)TempData["updateTask"])
+    {
+        <script>
+            toastr.success("Güncelleme işlemi başarılı");
+        </script>
+    }
+</body>
+
+
+</html>
